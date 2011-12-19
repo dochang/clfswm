@@ -850,16 +850,28 @@
                                  (child-rect-child rect)))
                   (frame (frame-window (child-rect-child rect))))))
     (when window
-      (let ((change (or (/= (xlib:drawable-x window) (child-rect-x rect))
-			(/= (xlib:drawable-y window) (child-rect-y rect))
-			(/= (xlib:drawable-width window) (child-rect-w rect))
-			(/= (xlib:drawable-height window) (child-rect-h rect)))))
-        (when change
-          (setf (xlib:drawable-x window) (child-rect-x rect)
-                (xlib:drawable-y window) (child-rect-y rect)
-                (xlib:drawable-width window) (child-rect-w rect)
-                (xlib:drawable-height window) (child-rect-h rect)))
-	change))))
+      (flet ((card16 (n)
+               "Convert N to CARD16 (UNSIGNED-BYTE 16)."
+               (ldb (byte 16 0) n))
+             (int16 (n)
+               "Convert N to INT16 (SIGNED-BYTE 16)."
+               (if (logbitp 15 n)
+                   (dpb n (byte 16 0) -1)
+                   (ldb (byte 16 0) n))))
+        (let* ((child-rect-x (int16 (child-rect-x rect)))
+               (child-rect-y (int16 (child-rect-y rect)))
+               (child-rect-w (card16 (child-rect-w rect)))
+               (child-rect-h (card16 (child-rect-h rect)))
+               (change (or (/= (xlib:drawable-x window) child-rect-x)
+                           (/= (xlib:drawable-y window) child-rect-y)
+                           (/= (xlib:drawable-width window) child-rect-w)
+                           (/= (xlib:drawable-height window) child-rect-h))))
+          (when change
+            (setf (xlib:drawable-x window) child-rect-x
+                  (xlib:drawable-y window) child-rect-y
+                  (xlib:drawable-width window) child-rect-w
+                  (xlib:drawable-height window) child-rect-h))
+          change)))))
 
 
 
